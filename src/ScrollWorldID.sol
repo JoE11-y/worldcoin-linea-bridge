@@ -2,9 +2,9 @@
 pragma solidity ^0.8.15;
 
 import {WorldIDBridge} from "./abstract/WorldIDBridge.sol";
-
+import {IL2ScrollMessenger} from "@scroll-tech/contracts/L2/IL2ScrollMessenger.sol";
 import {IScrollWorldID} from "./interfaces/IScrollWorldID.sol";
-import {ScrollCrossDomainOwnable} from "src/ScrollCrossDomainOwnable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 /// @title Scroll World ID Bridge
 /// @author Worldcoin
@@ -12,15 +12,38 @@ import {ScrollCrossDomainOwnable} from "src/ScrollCrossDomainOwnable.sol";
 ///         Scroll.
 /// @dev This contract is deployed on Optimism and is called by the L1 Proxy contract for each new
 ///      root insertion.
-contract ScrollWorldID is WorldIDBridge, ScrollCrossDomainOwnable, IScrollWorldID {
+contract ScrollWorldID is WorldIDBridge, IScrollWorldID, Ownable {
+    ///////////////////////////////////////////////////////////////////
+    ///                           STORAGE                           ///
+    ///////////////////////////////////////////////////////////////////
+
+    /// @notice The address of corresponding `L2ScrollMessenger` contract.
+    address public immutable messenger;
+
+    /// @notice The propagate root controller address
+    address public controller;
+
+    ///////////////////////////////////////////////////////////////////////////////
+    ///                                  ERRORS                                 ///
+    ///////////////////////////////////////////////////////////////////////////////
+
+    /// @notice Emitted when the cross sender is not controller
+    ///
+    error ErrorSenderNotController();
+
     ///////////////////////////////////////////////////////////////////////////////
     ///                                CONSTRUCTION                             ///
     ///////////////////////////////////////////////////////////////////////////////
 
-    /// @notice Initializes the contract the depth of the associated merkle tree.
-    ///
+    /// @notice Initializes the contract the depth of the associated merkle tree
+    ///         and sets the controller and the L2ScrollMessenger contract
     /// @param _treeDepth The depth of the WorldID Semaphore merkle tree.
-    constructor(uint8 _treeDepth) WorldIDBridge(_treeDepth) {}
+    constructor(uint8 _treeDepth, address _controller, address _messenger)
+        WorldIDBridge(_treeDepth)
+    {
+        controller = _controller;
+        messenger = _messenger;
+    }
 
     ///////////////////////////////////////////////////////////////////////////////
     ///                               ROOT MIRRORING                            ///
@@ -33,8 +56,11 @@ contract ScrollWorldID is WorldIDBridge, ScrollCrossDomainOwnable, IScrollWorldI
     /// @param newRoot The value of the new root.
     ///
     /// @custom:reverts CannotOverwriteRoot If the root already exists in the root history.
-    /// @custom:reverts string If the caller is not the owner.
-    function receiveRoot(uint256 newRoot) external virtual onlyOwner {
+    /// @custom:reverts string If the caller is not the controller
+    function receiveRoot(uint256 newRoot) external virtual {
+        if (controller != IL2ScrollMessenger(messenger).xDomainMessageSender()) {
+            revert ErrorSenderNotController();
+        }
         _receiveRoot(newRoot);
     }
 
@@ -49,5 +75,14 @@ contract ScrollWorldID is WorldIDBridge, ScrollCrossDomainOwnable, IScrollWorldI
     /// @custom:reverts string If the caller is not the owner.
     function setRootHistoryExpiry(uint256 expiryTime) public virtual override onlyOwner {
         _setRootHistoryExpiry(expiryTime);
+    }
+
+    /// @notice Updates controller address.
+    ///
+    /// @param _controller The new controller of the propagate root function
+    ///
+    /// @custom:reverts string If the caller is not the owner.
+    function setController(address _controller) public onlyOwner {
+        controller = _controller;
     }
 }
