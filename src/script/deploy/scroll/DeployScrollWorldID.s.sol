@@ -15,7 +15,6 @@ contract DeployScrollWorldID is Script {
     ///////////////////////////////////////////////////////////////////
     string public root = vm.projectRoot();
     uint256 public privateKey = vm.envUint("PRIVATE_KEY");
-    address public deployerAddress = vm.addr(privateKey);
     address public l2ScrollMessenger = vm.envAddress("SCROLL_L2_MESSENGER_ADDRESS");
 
     uint8 public treeDepth = uint8(30);
@@ -23,7 +22,7 @@ contract DeployScrollWorldID is Script {
     function run() external {
         vm.startBroadcast(privateKey);
 
-        scrollWorldID = new ScrollWorldID(treeDepth, deployerAddress, l2ScrollMessenger);
+        scrollWorldID = new ScrollWorldID(treeDepth, l2ScrollMessenger);
 
         vm.stopBroadcast();
     }

@@ -20,8 +20,8 @@ contract ScrollWorldID is WorldIDBridge, IScrollWorldID, Ownable {
     /// @notice The address of corresponding `L2ScrollMessenger` contract.
     address public immutable messenger;
 
-    /// @notice The propagate root controller address
-    address public controller;
+    /// @notice The address of the scroll sepolia bridge address
+    address public scroll_bridge;
 
     ///////////////////////////////////////////////////////////////////////////////
     ///                                  ERRORS                                 ///
@@ -29,19 +29,16 @@ contract ScrollWorldID is WorldIDBridge, IScrollWorldID, Ownable {
 
     /// @notice Emitted when the cross sender is not controller
     ///
-    error ErrorSenderNotController();
+    error ErrorSenderNotScrollBridge();
 
     ///////////////////////////////////////////////////////////////////////////////
     ///                                CONSTRUCTION                             ///
     ///////////////////////////////////////////////////////////////////////////////
 
     /// @notice Initializes the contract the depth of the associated merkle tree
-    ///         and sets the controller and the L2ScrollMessenger contract
+    ///         and the L2ScrollMessenger contract
     /// @param _treeDepth The depth of the WorldID Semaphore merkle tree.
-    constructor(uint8 _treeDepth, address _controller, address _messenger)
-        WorldIDBridge(_treeDepth)
-    {
-        controller = _controller;
+    constructor(uint8 _treeDepth, address _messenger) WorldIDBridge(_treeDepth) {
         messenger = _messenger;
     }
 
@@ -58,8 +55,8 @@ contract ScrollWorldID is WorldIDBridge, IScrollWorldID, Ownable {
     /// @custom:reverts CannotOverwriteRoot If the root already exists in the root history.
     /// @custom:reverts string If the caller is not the controller
     function receiveRoot(uint256 newRoot) external virtual {
-        if (controller != IL2ScrollMessenger(messenger).xDomainMessageSender()) {
-            revert ErrorSenderNotController();
+        if (scroll_bridge != IL2ScrollMessenger(messenger).xDomainMessageSender()) {
+            revert ErrorSenderNotScrollBridge();
         }
         _receiveRoot(newRoot);
     }
@@ -79,10 +76,10 @@ contract ScrollWorldID is WorldIDBridge, IScrollWorldID, Ownable {
 
     /// @notice Updates controller address.
     ///
-    /// @param _controller The new controller of the propagate root function
+    /// @param _bridge The address of the scroll bridge
     ///
     /// @custom:reverts string If the caller is not the owner.
-    function setController(address _controller) public onlyOwner {
-        controller = _controller;
+    function setScrollBridge(address _bridge) public onlyOwner {
+        scroll_bridge = _bridge;
     }
 }

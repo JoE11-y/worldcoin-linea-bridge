@@ -17,8 +17,8 @@ abstract contract ScrollCrossDomainOwnable is Ownable {
     address scrollMessengerAddress = address(0xBa50f5340FB9F3Bd074bD638c9BE13eCB36E603d);
     IL2ScrollMessenger public messenger = IL2ScrollMessenger(scrollMessengerAddress);
 
-    /// @notice If true, the contract uses the cross domain _checkOwner function override.
-    ///         If false it uses the standard Ownable _checkOwner function.
+    /// @notice If true, the contract uses the standard Ownable _checkOwner function.
+    ///         If false it false uses the cross domain _checkOwner function override.
     bool public isLocal = true;
 
     /// @notice Emits when ownership of the contract is transferred. Includes the
